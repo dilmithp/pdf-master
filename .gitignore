@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+.playwright/
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Java / Gradle (for future services/)
+.gradle/
+build/
+*.class
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Local infra
+.docker/
+.local/
+
+# Ruflo / MCP local state
+ruvector.db
+ruvector.db-journal
+.ruflo/

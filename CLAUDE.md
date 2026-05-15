@@ -39,6 +39,7 @@ Shared SEO types live in `apps/web/lib/seo/types.ts` — schema generators consu
 
 ## Common commands
 
+### Frontend (`apps/web`)
 ```bash
 pnpm install              # install workspace deps
 pnpm dev                  # run apps/web in dev mode
@@ -52,6 +53,24 @@ pnpm lint:fix             # biome check --write .
 ```
 
 Run a single Vitest test: `pnpm --filter @pdf-master/web exec vitest run path/to/file.test.ts`.
+
+### Backend (`services/*`)
+```bash
+./gradlew projects                              # list services
+./gradlew build                                 # build all services
+./gradlew :services:<svc>:build                 # build one service
+./gradlew :services:<svc>:bootRun               # run one service locally
+./gradlew :services:<svc>:test                  # tests for one service
+./gradlew :services:<svc>:test --tests "FQCN"   # single test
+./gradlew spotlessApply                         # format Java sources
+./gradlew checkLicense                          # AGPL/GPL guard
+```
+
+Gradle wrapper pins **Gradle 8.11**. Convention plugins live in `build-logic/`:
+`pdfmaster.java-conventions`, `pdfmaster.spring-boot-conventions`,
+`pdfmaster.spring-mvc-conventions`, `pdfmaster.spring-webflux-conventions`,
+`pdfmaster.testcontainers-conventions`. Each service's `build.gradle.kts`
+applies the appropriate convention plugin and adds only service-specific deps.
 
 ## Code conventions
 

@@ -1,0 +1,9 @@
+aws:
+  s3:
+    endpoint: http://localhost:4566
+    access-key: test
+    secret-key: test
+
+logging:
+  level:
+    com.pdfmaster: DEBUG

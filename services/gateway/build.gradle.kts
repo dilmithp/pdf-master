@@ -1,4 +1,13 @@
-// Service-specific build configuration. Apply the appropriate convention plugin
-// (e.g. `id("pdfmaster.spring-webflux-conventions")` for the gateway,
-// `id("pdfmaster.spring-mvc-conventions")` for CRUD/MVC services) and add
-// service-specific dependencies below.
+plugins {
+    id("pdfmaster.spring-webflux-conventions")
+}
+
+description = "Edge API gateway: TLS termination, JWT verification, rate limiting, routing."
+
+dependencies {
+    implementation("org.springframework.cloud:spring-cloud-starter-gateway")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
+
+    testImplementation("org.springframework.security:spring-security-test")
+}

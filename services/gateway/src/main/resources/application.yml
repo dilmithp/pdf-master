@@ -1,0 +1,56 @@
+server:
+  port: 8080
+  netty:
+    connection-timeout: 10s
+    idle-timeout: 60s
+
+spring:
+  application:
+    name: gateway
+  main:
+    web-application-type: reactive
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081}
+  cloud:
+    gateway:
+      filter:
+        secure-headers:
+          enabled: true
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 30s
+
+gateway:
+  rate-limit:
+    replenish-rate: 10
+    burst-capacity: 20
+    requested-tokens: 1
+  routes: {}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    org.springframework.security: INFO
+    reactor.netty: INFO

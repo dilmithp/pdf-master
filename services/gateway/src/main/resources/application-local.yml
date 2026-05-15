@@ -1,0 +1,17 @@
+gateway:
+  rate-limit:
+    replenish-rate: 100
+    burst-capacity: 200
+    requested-tokens: 1
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+    com.pdfmaster.gateway: DEBUG
+    reactor.netty.http.client: INFO
+
+management:
+  endpoint:
+    health:
+      show-details: always

@@ -1,0 +1,32 @@
+package com.pdfmaster.pdfai.adapter.out.llm;
+
+import com.pdfmaster.pdfai.application.port.out.LlmClient;
+import com.pdfmaster.pdfai.domain.AiOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+/**
+ * Default {@link LlmClient} implementation. Logs the invocation and returns a deterministic canned
+ * response. No third-party LLM SDK is on the classpath; swap in a real provider client when the AI
+ * tier graduates from scaffolding.
+ */
+@Component
+public class NoopLlmClient implements LlmClient {
+
+  private static final Logger LOG = LoggerFactory.getLogger(NoopLlmClient.class);
+
+  @Override
+  public LlmResponse complete(AiOperation op, String prompt) {
+    int promptLength = prompt == null ? 0 : prompt.length();
+    LOG.info("NoopLlmClient.complete (op={}, promptChars={})", op, promptLength);
+    String text =
+        switch (op) {
+          case CHAT -> "[noop-chat] (real LLM client not configured)";
+          case SUMMARIZE -> "[noop-summary]";
+          case TRANSLATE -> "[noop-translation]";
+          case REDACT -> "[noop-redaction]";
+        };
+    return new LlmResponse(text, promptLength, text.length());
+  }
+}

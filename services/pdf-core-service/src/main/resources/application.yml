@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: pdf-core-service
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 10s
+
+server:
+  port: ${PORT:8082}
+  shutdown: graceful
+  forward-headers-strategy: framework
+
+aws:
+  s3:
+    bucket: ${S3_BUCKET:pdfmaster-uploads}
+    region: ${AWS_REGION:us-east-1}
+    endpoint: ${S3_ENDPOINT:}
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0

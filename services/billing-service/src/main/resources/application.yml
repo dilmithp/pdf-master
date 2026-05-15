@@ -1,0 +1,33 @@
+server:
+  port: 8085
+spring:
+  application:
+    name: billing-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pdfmaster}
+    username: ${DB_USERNAME:pdfmaster}
+    password: ${DB_PASSWORD:pdfmaster}
+  jpa:
+    properties:
+      hibernate:
+        default_schema: billing
+        jdbc.lob.non_contextual_creation: true
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    schemas: [billing]
+    default-schema: billing
+    create-schemas: true
+stripe:
+  api-key: ${STRIPE_API_KEY:sk_test_placeholder}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_placeholder}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

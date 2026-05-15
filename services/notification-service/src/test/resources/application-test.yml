@@ -1,0 +1,4 @@
+postmark:
+  server-token: test-token
+  from-address: no-reply@pdfmaster.test
+  base-url: http://localhost

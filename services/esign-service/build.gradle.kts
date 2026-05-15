@@ -1,2 +1,11 @@
-// Service-specific build configuration. Agents fill this in with the
-// appropriate convention plugin and dependencies for the service tier.
+plugins {
+    id("pdfmaster.spring-mvc-conventions")
+    id("pdfmaster.spring-data-jpa-conventions")
+    id("pdfmaster.testcontainers-conventions")
+}
+
+description = "E-signature workflows, signer ordering, and X.509 certificate scaffolding."
+
+dependencies {
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
+}

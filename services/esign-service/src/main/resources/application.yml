@@ -1,0 +1,30 @@
+server:
+  port: 8084
+spring:
+  application:
+    name: esign-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pdfmaster}
+    username: ${DB_USERNAME:pdfmaster}
+    password: ${DB_PASSWORD:pdfmaster}
+  jpa:
+    properties:
+      hibernate:
+        default_schema: esign
+        jdbc.lob.non_contextual_creation: true
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    schemas: [esign]
+    default-schema: esign
+    create-schemas: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

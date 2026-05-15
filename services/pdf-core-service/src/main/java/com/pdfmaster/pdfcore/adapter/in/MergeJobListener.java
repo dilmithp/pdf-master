@@ -76,7 +76,7 @@ public class MergeJobListener {
   }
 
   /** Validates every input by magic-byte and merges via PDFBox. */
-  byte[] mergeAll(List<String> keys) throws IOException {
+  public byte[] mergeAll(List<String> keys) throws IOException {
     PDFMergerUtility merger = new PDFMergerUtility();
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     merger.setDestinationStream(out);

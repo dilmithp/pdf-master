@@ -27,6 +27,9 @@ test-results/
 .vscode/
 *.swp
 
+# Claude Code worktrees (sub-agent isolated branches; never commit these)
+.claude/worktrees/
+
 # Java / Gradle
 .gradle/
 build/

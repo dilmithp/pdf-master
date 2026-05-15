@@ -33,7 +33,8 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.properties
 *.class
-out/
+# Only ignore root-level IntelliJ output dirs, NOT hexagonal `adapter/out/` packages.
+/out/
 bin/
 .kotlin/
 

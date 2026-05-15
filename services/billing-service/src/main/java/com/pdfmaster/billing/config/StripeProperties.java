@@ -1,0 +1,10 @@
+package com.pdfmaster.billing.config;
+
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+/** Bound from {@code stripe.*} configuration. Secret material — never log. */
+@Validated
+@ConfigurationProperties(prefix = "stripe")
+public record StripeProperties(@NotBlank String apiKey, @NotBlank String webhookSecret) {}

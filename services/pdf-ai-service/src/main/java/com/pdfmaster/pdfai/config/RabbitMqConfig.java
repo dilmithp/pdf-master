@@ -22,6 +22,10 @@ public class RabbitMqConfig {
   public static final String DLQ_QUEUE = "pdf.ai.requested.dlq";
   public static final String ROUTING_KEY = "pdf.ai.requested";
 
+  public static final String INDEX_QUEUE = "pdf.ai.index.requested";
+  public static final String INDEX_DLQ_QUEUE = "pdf.ai.index.requested.dlq";
+  public static final String INDEX_ROUTING_KEY = "pdf.ai.index.requested";
+
   @Bean
   TopicExchange jobsExchange() {
     return new TopicExchange(RabbitMqJobPublisher.EXCHANGE, true, false);
@@ -43,6 +47,24 @@ public class RabbitMqConfig {
   @Bean
   Binding aiBinding(Queue aiQueue, TopicExchange jobsExchange) {
     return BindingBuilder.bind(aiQueue).to(jobsExchange).with(ROUTING_KEY);
+  }
+
+  @Bean
+  Queue aiIndexQueue() {
+    return QueueBuilder.durable(INDEX_QUEUE)
+        .withArgument("x-dead-letter-exchange", "")
+        .withArgument("x-dead-letter-routing-key", INDEX_DLQ_QUEUE)
+        .build();
+  }
+
+  @Bean
+  Queue aiIndexDlq() {
+    return QueueBuilder.durable(INDEX_DLQ_QUEUE).build();
+  }
+
+  @Bean
+  Binding aiIndexBinding(Queue aiIndexQueue, TopicExchange jobsExchange) {
+    return BindingBuilder.bind(aiIndexQueue).to(jobsExchange).with(INDEX_ROUTING_KEY);
   }
 
   @Bean

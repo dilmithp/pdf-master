@@ -58,6 +58,15 @@ aws:
     access-key: ${AWS_ACCESS_KEY_ID:}
     secret-key: ${AWS_SECRET_ACCESS_KEY:}
 
+ai:
+  anthropic-api-key: ${ANTHROPIC_API_KEY:}
+  anthropic-model: ${ANTHROPIC_MODEL:claude-opus-4-7}
+  openai-api-key: ${OPENAI_API_KEY:}
+  openai-embed-model: ${OPENAI_EMBED_MODEL:text-embedding-3-small}
+  max-chunk-tokens: ${AI_MAX_CHUNK_TOKENS:500}
+  chunk-overlap: ${AI_CHUNK_OVERLAP:50}
+  top-k: ${AI_TOP_K:5}
+
 management:
   endpoints:
     web:

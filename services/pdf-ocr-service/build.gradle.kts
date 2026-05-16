@@ -1,5 +1,6 @@
 plugins {
     id("pdfmaster.spring-mvc-conventions")
+    id("pdfmaster.spring-data-jpa-conventions")
     id("pdfmaster.testcontainers-conventions")
 }
 
@@ -10,6 +11,7 @@ description = "PDF OCR service (Tesseract via Tess4J)"
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-amqp")
     implementation("software.amazon.awssdk:s3:${libs.versions.awsSdk.get()}")
+    implementation("org.apache.pdfbox:pdfbox:${libs.versions.pdfbox.get()}")
     implementation("net.sourceforge.tess4j:tess4j:${libs.versions.tess4j.get()}") {
         // Avoid pulling in transitive deps that conflict with Spring Boot's logging stack.
         exclude(group = "org.slf4j", module = "slf4j-log4j12")

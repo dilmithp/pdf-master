@@ -1,6 +1,21 @@
 spring:
   application:
     name: pdf-convert-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pdfmaster}
+    username: ${DB_USERNAME:pdfmaster}
+    password: ${DB_PASSWORD:pdfmaster}
+  jpa:
+    properties:
+      hibernate:
+        default_schema: pdf_convert
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    schemas: [pdf_convert]
+    default-schema: pdf_convert
+    create-schemas: true
   security:
     oauth2:
       resourceserver:

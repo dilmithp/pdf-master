@@ -1,5 +1,6 @@
 plugins {
     id("pdfmaster.spring-mvc-conventions")
+    id("pdfmaster.spring-data-jpa-conventions")
     id("pdfmaster.testcontainers-conventions")
 }
 

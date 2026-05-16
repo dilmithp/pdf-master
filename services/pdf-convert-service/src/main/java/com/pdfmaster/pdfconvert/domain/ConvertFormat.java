@@ -14,9 +14,11 @@ public enum ConvertFormat {
   PPTX("application/vnd.openxmlformats-officedocument.presentationml.presentation"),
   ODT("application/vnd.oasis.opendocument.text"),
   PNG("image/png"),
-  JPG("image/jpeg");
+  JPG("image/jpeg"),
+  TXT("text/plain; charset=utf-8");
 
-  private static final Set<String> ALLOWED_INPUTS = Set.of("pdf", "docx", "xlsx", "pptx", "odt");
+  private static final Set<String> ALLOWED_INPUTS =
+      Set.of("pdf", "docx", "xlsx", "pptx", "odt", "jpg", "png");
 
   private final String contentType;
 

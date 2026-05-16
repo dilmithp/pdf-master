@@ -1,6 +1,21 @@
 spring:
   application:
     name: pdf-ocr-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pdfmaster}
+    username: ${DB_USERNAME:pdfmaster}
+    password: ${DB_PASSWORD:pdfmaster}
+  jpa:
+    properties:
+      hibernate:
+        default_schema: pdf_ocr
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    schemas: [pdf_ocr]
+    default-schema: pdf_ocr
+    create-schemas: true
   security:
     oauth2:
       resourceserver:

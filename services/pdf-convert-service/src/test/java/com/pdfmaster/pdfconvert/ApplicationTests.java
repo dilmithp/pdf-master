@@ -83,6 +83,9 @@ class ApplicationTests {
   /** LibreOffice CLI isn't available in CI — stub it to avoid invoking the real binary. */
   @MockitoBean DocumentConverter documentConverter;
 
+  /** PdfBoxConverter depends on PDFBox which is available, but we mock the port for isolation. */
+  @MockitoBean com.pdfmaster.pdfconvert.application.port.out.PdfImageConverter pdfImageConverter;
+
   @Autowired MockMvc mockMvc;
   @Autowired S3ObjectStore objectStore;
 

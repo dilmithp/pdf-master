@@ -4,6 +4,7 @@ import com.pdfmaster.pdfconvert.application.port.out.DocumentConverter;
 import com.pdfmaster.pdfconvert.application.port.out.DocumentConverter.ConversionResult;
 import com.pdfmaster.pdfconvert.application.port.out.JobRepository;
 import com.pdfmaster.pdfconvert.application.port.out.ObjectStore;
+import com.pdfmaster.pdfconvert.application.port.out.PdfImageConverter;
 import com.pdfmaster.pdfconvert.config.RabbitMqConfig;
 import com.pdfmaster.pdfconvert.domain.ConvertFormat;
 import com.pdfmaster.pdfconvert.domain.JobId;
@@ -20,7 +21,10 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-/** Consumes {@code pdf.convert.requested}, invokes LibreOffice runner, uploads result. */
+/**
+ * Consumes {@code pdf.convert.requested}. Routes to the PDFBox image converter for image/text
+ * paths, and to the LibreOffice runner for office-document paths.
+ */
 @Component
 public class ConvertJobListener {
 
@@ -31,19 +35,28 @@ public class ConvertJobListener {
 
   private static final byte[] ZIP_MAGIC = new byte[] {'P', 'K', 0x03, 0x04};
 
+  /** PNG magic bytes: 8 bytes starting with 0x89 PNG. */
+  private static final byte[] PNG_MAGIC = new byte[] {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
+
+  /** JPEG magic bytes: SOI marker FF D8 FF. */
+  private static final byte[] JPG_MAGIC = new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
+
   private final ObjectStore objectStore;
   private final JobRepository jobRepository;
   private final DocumentConverter converter;
+  private final PdfImageConverter imageConverter;
   private final Clock clock;
 
   public ConvertJobListener(
       ObjectStore objectStore,
       JobRepository jobRepository,
       DocumentConverter converter,
+      PdfImageConverter imageConverter,
       Clock clock) {
     this.objectStore = objectStore;
     this.jobRepository = jobRepository;
     this.converter = converter;
+    this.imageConverter = imageConverter;
     this.clock = clock;
   }
 
@@ -65,8 +78,8 @@ public class ConvertJobListener {
       jobRepository.markStatus(jobId, JobStatus.RUNNING);
       byte[] bytes = objectStore.download(keys.get(0));
       ensureKnownMagic(keys.get(0), bytes, from);
-      ConversionResult result = converter.convert(bytes, from, to);
-      String outputKey = "results/" + jobId.value() + "/output." + to.extension();
+      ConversionResult result = doConvert(bytes, from, to);
+      String outputKey = "results/" + jobId.value() + "/output." + extensionFor(to);
       objectStore.upload(
           outputKey,
           result.bytes(),
@@ -82,12 +95,29 @@ public class ConvertJobListener {
     }
   }
 
+  private ConversionResult doConvert(byte[] bytes, ConvertFormat from, ConvertFormat to) {
+    if (imageConverter.supports(from, to)) {
+      return imageConverter.convert(bytes, from, to);
+    }
+    return converter.convert(bytes, from, to);
+  }
+
+  private static String extensionFor(ConvertFormat to) {
+    // ZIP archive for multi-page image exports
+    if (to == ConvertFormat.JPG || to == ConvertFormat.PNG) {
+      return "zip";
+    }
+    return to.extension();
+  }
+
   private static void ensureKnownMagic(String key, byte[] bytes, ConvertFormat from) {
-    if (from == ConvertFormat.PDF) {
-      ensurePrefix(bytes, PDF_MAGIC, "PDF", key);
-    } else {
-      // DOCX/XLSX/PPTX/ODT are all ZIP-based.
-      ensurePrefix(bytes, ZIP_MAGIC, from.name() + " (zip)", key);
+    switch (from) {
+      case PDF -> ensurePrefix(bytes, PDF_MAGIC, "PDF", key);
+      case PNG -> ensurePrefix(bytes, PNG_MAGIC, "PNG", key);
+      case JPG -> ensurePrefix(bytes, JPG_MAGIC, "JPEG", key);
+      default ->
+          // DOCX/XLSX/PPTX/ODT are all ZIP-based.
+          ensurePrefix(bytes, ZIP_MAGIC, from.name() + " (zip)", key);
     }
   }
 

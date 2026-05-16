@@ -36,7 +36,8 @@ class ApplicationTests {
   static final RabbitMQContainer RABBIT =
       new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.13-management"));
 
-  @Container @ServiceConnection
+  // LocalStack S3 has no Spring Boot ServiceConnectionDetailsFactory — wire via @DynamicPropertySource.
+  @Container
   static final LocalStackContainer LOCALSTACK =
       new LocalStackContainer(DockerImageName.parse("localstack/localstack:3.8"))
           .withServices(LocalStackContainer.Service.S3);

@@ -6,13 +6,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.hibernate.annotations.Type;
 
 /**
  * JPA mapping for a chunk of a document with its embedding. The embedding column is the
- * pgvector-managed {@code vector(1536)} type, exposed through Hibernate's generic SQL type {@link
- * SqlTypes#OTHER} so Postgres receives the {@link PGvector} as a custom type via its JDBC binding.
+ * pgvector-managed {@code vector(1536)} type, bound via {@link PGvectorUserType} which sends the
+ * value as a text literal cast to {@code vector} on the Postgres side.
  */
 @Entity
 @Table(name = "document_chunk", schema = "pdf_ai")
@@ -29,7 +28,7 @@ public class DocumentChunkEntity {
   @Column(nullable = false, columnDefinition = "text")
   private String content;
 
-  @JdbcTypeCode(SqlTypes.OTHER)
+  @Type(PGvectorUserType.class)
   @Column(nullable = false, columnDefinition = "vector(1536)")
   private PGvector embedding;
 

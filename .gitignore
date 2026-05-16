@@ -53,3 +53,5 @@ pnpm-debug.log*
 ruvector.db
 ruvector.db-journal
 .ruflo/
+.claude-flow/
+.swarm/

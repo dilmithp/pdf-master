@@ -1,6 +1,10 @@
 package com.pdfmaster.pdfcore;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.pdfmaster.pdfcore.adapter.out.s3.S3ObjectStore;
 import java.util.List;
@@ -83,10 +87,10 @@ class ApplicationTests {
     var result =
         mockMvc
             .perform(
-                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
-                        "/v1/jobs/merge")
+                post("/v1/jobs/merge")
                     .contentType("application/json")
-                    .content(body))
+                    .content(body)
+                    .with(jwt()))
             .andExpect(
                 org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
                     .isAccepted())
@@ -101,9 +105,7 @@ class ApplicationTests {
     assertThat(tree.get("uploadUrls").get(0).get("url").asText()).startsWith("http");
 
     mockMvc
-        .perform(
-            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
-                "/v1/jobs/" + jobId))
+        .perform(get("/v1/jobs/" + jobId).with(jwt()))
         .andExpect(
             org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
         .andExpect(
@@ -114,12 +116,29 @@ class ApplicationTests {
   @Test
   void unknownJobReturns404() throws Exception {
     mockMvc
-        .perform(
-            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
-                "/v1/jobs/00000000-0000-0000-0000-000000000000"))
+        .perform(get("/v1/jobs/00000000-0000-0000-0000-000000000000").with(jwt()))
         .andExpect(
             org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
                 .isNotFound());
+  }
+
+  @Test
+  void unauthenticatedPostReturns401() throws Exception {
+    mockMvc
+        .perform(post("/v1/jobs/merge").contentType("application/json").content("{\"fileCount\":1}"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void unauthenticatedGetReturns401() throws Exception {
+    mockMvc
+        .perform(get("/v1/jobs/00000000-0000-0000-0000-000000000000"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void actuatorHealthIsPublic() throws Exception {
+    mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
   }
 
   // Suppress unused warning — referenced via class loader for testcontainers static init order.

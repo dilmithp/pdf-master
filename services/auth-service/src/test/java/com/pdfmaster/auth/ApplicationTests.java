@@ -13,7 +13,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@SpringBootTest
+@SpringBootTest(
+    properties = {
+      "management.health.redis.enabled=false",
+      "spring.data.redis.repositories.enabled=false"
+    })
 @Testcontainers
 class ApplicationTests {
 

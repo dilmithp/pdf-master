@@ -1,5 +1,6 @@
 package com.pdfmaster.esign;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -50,7 +51,11 @@ class SignatureRequestControllerIntegrationTest {
 
     MvcResult created =
         mockMvc
-            .perform(post("/v1/signature-requests").contentType("application/json").content(body))
+            .perform(
+                post("/v1/signature-requests")
+                    .contentType("application/json")
+                    .content(body)
+                    .with(jwt()))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.status").value("DRAFT"))
             .andExpect(jsonPath("$.signers", org.hamcrest.Matchers.hasSize(2)))
@@ -61,7 +66,7 @@ class SignatureRequestControllerIntegrationTest {
     String id = mapper.readTree(created.getResponse().getContentAsString()).get("id").asText();
 
     mockMvc
-        .perform(get("/v1/signature-requests/" + id))
+        .perform(get("/v1/signature-requests/" + id).with(jwt()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.signers[1].email").value("bob@example.com"));
   }
@@ -76,7 +81,11 @@ class SignatureRequestControllerIntegrationTest {
                 "signers", List.of()));
 
     mockMvc
-        .perform(post("/v1/signature-requests").contentType("application/json").content(body))
+        .perform(
+            post("/v1/signature-requests")
+                .contentType("application/json")
+                .content(body)
+                .with(jwt()))
         .andExpect(status().isBadRequest());
   }
 
@@ -90,7 +99,37 @@ class SignatureRequestControllerIntegrationTest {
                 "signers", List.of(Map.of("email", "not-an-email", "order", 0))));
 
     mockMvc
-        .perform(post("/v1/signature-requests").contentType("application/json").content(body))
+        .perform(
+            post("/v1/signature-requests")
+                .contentType("application/json")
+                .content(body)
+                .with(jwt()))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void unauthenticatedPostReturns401() throws Exception {
+    String body =
+        mapper.writeValueAsString(
+            Map.of(
+                "senderId", UUID.randomUUID(),
+                "documentS3Key", "envelope/document.pdf",
+                "signers", List.of(Map.of("email", "alice@example.com", "order", 0))));
+
+    mockMvc
+        .perform(post("/v1/signature-requests").contentType("application/json").content(body))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void unauthenticatedGetReturns401() throws Exception {
+    mockMvc
+        .perform(get("/v1/signature-requests/00000000-0000-0000-0000-000000000000"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void actuatorHealthIsPublic() throws Exception {
+    mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
   }
 }

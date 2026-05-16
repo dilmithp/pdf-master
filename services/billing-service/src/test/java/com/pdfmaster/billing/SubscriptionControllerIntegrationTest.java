@@ -1,5 +1,6 @@
 package com.pdfmaster.billing;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -46,7 +47,9 @@ class SubscriptionControllerIntegrationTest {
             Instant.now().plusSeconds(86_400)));
 
     mockMvc
-        .perform(get("/v1/subscriptions/" + userId))
+        .perform(
+            get("/v1/subscriptions/" + userId)
+                .with(jwt().jwt(j -> j.claim("sub", userId.toString()))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.userId").value(userId.toString()))
         .andExpect(jsonPath("$.plan").value("PRO"))
@@ -56,8 +59,42 @@ class SubscriptionControllerIntegrationTest {
 
   @Test
   void returns404WhenAbsent() throws Exception {
+    UUID userId = UUID.randomUUID();
+    mockMvc
+        .perform(
+            get("/v1/subscriptions/" + userId)
+                .with(jwt().jwt(j -> j.claim("sub", userId.toString()))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void unauthenticatedRequestReturns401() throws Exception {
     mockMvc
         .perform(get("/v1/subscriptions/" + UUID.randomUUID()))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void wrongOwnerReturns403() throws Exception {
+    UUID userId = UUID.randomUUID();
+    service.upsert(
+        new Subscription(
+            UUID.randomUUID(),
+            userId,
+            "sub_" + UUID.randomUUID(),
+            Plan.FREE,
+            SubscriptionStatus.ACTIVE,
+            Instant.now().plusSeconds(86_400)));
+
+    mockMvc
+        .perform(
+            get("/v1/subscriptions/" + userId)
+                .with(jwt().jwt(j -> j.claim("sub", UUID.randomUUID().toString()))))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void actuatorHealthIsPublic() throws Exception {
+    mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
   }
 }

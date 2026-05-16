@@ -141,9 +141,8 @@ class StripeIdempotencyIntegrationTest {
     String signedPayload = timestamp + "." + payload;
 
     Mac mac = Mac.getInstance("HmacSHA256");
-    // Stripe's secret is the raw string value after the "whsec_" prefix is stripped.
-    String rawSecret = secret.startsWith("whsec_") ? secret.substring(6) : secret;
-    mac.init(new SecretKeySpec(rawSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+    // Stripe's SDK uses the secret as-is, including any "whsec_" prefix — do not strip it.
+    mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
     byte[] hmacBytes = mac.doFinal(signedPayload.getBytes(StandardCharsets.UTF_8));
 
     StringBuilder hex = new StringBuilder();

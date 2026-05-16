@@ -1,5 +1,6 @@
 package com.pdfmaster.auth;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -20,9 +21,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * End-to-end HTTP test for {@link com.pdfmaster.auth.adapter.in.UserController}: exercises register
- * → fetch → conflict-on-duplicate against a real Postgres via Testcontainers.
+ * -> fetch -> conflict-on-duplicate against a real Postgres via Testcontainers.
  */
-@SpringBootTest
+@SpringBootTest(
+    properties = {
+      "management.health.redis.enabled=false",
+      "spring.data.redis.repositories.enabled=false"
+    })
 @AutoConfigureMockMvc
 @Testcontainers
 class UserControllerIntegrationTest {
@@ -50,7 +55,9 @@ class UserControllerIntegrationTest {
     String id = tree.get("id").asText();
 
     mockMvc
-        .perform(get("/v1/users/" + id))
+        .perform(
+            get("/v1/users/" + id)
+                .with(jwt().jwt(j -> j.claim("sub", id))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.email").value(email));
 
@@ -78,8 +85,42 @@ class UserControllerIntegrationTest {
 
   @Test
   void returns404ForUnknownUser() throws Exception {
-    mockMvc.perform(get("/v1/users/00000000-0000-0000-0000-000000000000"))
+    String unknownId = "00000000-0000-0000-0000-000000000000";
+    mockMvc
+        .perform(
+            get("/v1/users/" + unknownId)
+                .with(jwt().jwt(j -> j.claim("sub", unknownId))))
         .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void getWithoutJwtReturns401() throws Exception {
+    mockMvc
+        .perform(get("/v1/users/00000000-0000-0000-0000-000000000001"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void getWithWrongOwnerJwtReturns403() throws Exception {
+    String email = "owner-test-" + System.nanoTime() + "@pdfmaster.test";
+    String body = mapper.writeValueAsString(new Register(email, "correct-horse-battery-staple"));
+    MvcResult created =
+        mockMvc
+            .perform(post("/v1/users").contentType("application/json").content(body))
+            .andExpect(status().isCreated())
+            .andReturn();
+    String id = mapper.readTree(created.getResponse().getContentAsString()).get("id").asText();
+
+    mockMvc
+        .perform(
+            get("/v1/users/" + id)
+                .with(jwt().jwt(j -> j.claim("sub", "00000000-0000-0000-0000-000000000099"))))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void actuatorHealthIsPublic() throws Exception {
+    mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
   }
 
   record Register(String email, String password) {}

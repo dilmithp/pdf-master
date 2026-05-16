@@ -1,6 +1,7 @@
 package com.pdfmaster.pdfai;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import com.pdfmaster.pdfai.adapter.out.persistence.DocumentChunkEntity;
 import com.pdfmaster.pdfai.adapter.out.persistence.SpringDataDocumentChunkRepository;
@@ -103,7 +104,8 @@ class ApplicationTests {
             .perform(
                 MockMvcRequestBuilders.post("/v1/jobs/ai")
                     .contentType("application/json")
-                    .content(body))
+                    .content(body)
+                    .with(jwt()))
             .andExpect(MockMvcResultMatchers.status().isAccepted())
             .andReturn();
     String response = result.getResponse().getContentAsString();
@@ -111,7 +113,8 @@ class ApplicationTests {
     assertThat(tree.get("uploadUrls")).hasSize(1);
 
     mockMvc
-        .perform(MockMvcRequestBuilders.get("/v1/jobs/" + tree.get("jobId").asText()))
+        .perform(
+            MockMvcRequestBuilders.get("/v1/jobs/" + tree.get("jobId").asText()).with(jwt()))
         .andExpect(MockMvcResultMatchers.status().isOk())
         .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("QUEUED"));
   }
@@ -123,8 +126,34 @@ class ApplicationTests {
         .perform(
             MockMvcRequestBuilders.post("/v1/jobs/ai")
                 .contentType("application/json")
-                .content(body))
+                .content(body)
+                .with(jwt()))
         .andExpect(MockMvcResultMatchers.status().isBadRequest());
+  }
+
+  @Test
+  void unauthenticatedPostReturns401() throws Exception {
+    String body = "{\"operation\":\"SUMMARIZE\"}";
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.post("/v1/jobs/ai")
+                .contentType("application/json")
+                .content(body))
+        .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+  }
+
+  @Test
+  void unauthenticatedGetReturns401() throws Exception {
+    mockMvc
+        .perform(MockMvcRequestBuilders.get("/v1/jobs/00000000-0000-0000-0000-000000000000"))
+        .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+  }
+
+  @Test
+  void actuatorHealthIsPublic() throws Exception {
+    mockMvc
+        .perform(MockMvcRequestBuilders.get("/actuator/health"))
+        .andExpect(MockMvcResultMatchers.status().isOk());
   }
 
   @Test

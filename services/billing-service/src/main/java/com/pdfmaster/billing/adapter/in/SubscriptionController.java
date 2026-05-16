@@ -5,6 +5,7 @@ import com.pdfmaster.billing.domain.Subscription;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +23,7 @@ public class SubscriptionController {
   }
 
   @GetMapping("/{userId}")
+  @PreAuthorize("#userId.toString() == authentication.name or hasAuthority('SCOPE_admin')")
   public ResponseEntity<SubscriptionResponse> get(@PathVariable UUID userId) {
     return service
         .findByUserId(userId)

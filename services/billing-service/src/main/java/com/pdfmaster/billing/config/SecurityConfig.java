@@ -1,40 +1,21 @@
-package com.pdfmaster.auth.config;
+package com.pdfmaster.billing.config;
 
-import com.pdfmaster.auth.application.PasswordHasher;
-import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Security configuration for the auth service. Wires BCrypt password encoder, OAuth2 resource
- * server JWT validation, and permits authorization server and well-known endpoints publicly.
+ * Security configuration for the billing service. Stateless REST API secured by JWT; the Stripe
+ * webhook endpoint is exempt because Stripe signs the payload with its own HMAC secret.
  */
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
-
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
-
-  @Bean
-  public PasswordHasher passwordHasher(PasswordEncoder encoder) {
-    return encoder::encode;
-  }
-
-  @Bean
-  public Clock clock() {
-    return Clock.systemUTC();
-  }
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -46,9 +27,7 @@ public class SecurityConfig {
                         "/actuator/health/**",
                         "/actuator/info",
                         "/actuator/prometheus",
-                        "/oauth2/**",
-                        "/.well-known/**",
-                        "/v1/users")
+                        "/v1/webhooks/stripe")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

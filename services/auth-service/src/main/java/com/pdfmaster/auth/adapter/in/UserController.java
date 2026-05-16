@@ -11,6 +11,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,6 +44,7 @@ public class UserController {
   }
 
   @GetMapping("/{id}")
+  @PreAuthorize("#id.toString() == authentication.name or hasAuthority('SCOPE_admin')")
   public ResponseEntity<UserResponse> get(@PathVariable UUID id) {
     return service
         .findById(id)

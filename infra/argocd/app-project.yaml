@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: pdfmaster
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: pdfmaster
+    managed-by: argocd
+spec:
+  description: "pdfmaster production services"
+
+  sourceRepos:
+    - "https://github.com/YOUR_ORG/pdf-master.git"
+
+  destinations:
+    - namespace: pdfmaster
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+    - namespace: external-secrets
+      server: https://kubernetes.default.svc
+    - namespace: keda
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    - group: external-secrets.io
+      kind: ClusterSecretStore
+    - group: keda.sh
+      kind: TriggerAuthentication
+    - group: keda.sh
+      kind: ClusterTriggerAuthentication
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "*"
+    - group: apps
+      kind: "*"
+    - group: autoscaling
+      kind: "*"
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: networking.k8s.io
+      kind: "*"
+    - group: monitoring.coreos.com
+      kind: ServiceMonitor
+    - group: external-secrets.io
+      kind: ExternalSecret
+    - group: keda.sh
+      kind: ScaledObject
+
+  roles:
+    - name: deployer
+      description: CI/CD pipeline deploy role
+      policies:
+        - p, proj:pdfmaster:deployer, applications, sync, pdfmaster/*, allow
+        - p, proj:pdfmaster:deployer, applications, get, pdfmaster/*, allow
+      groups:
+        - pdfmaster:deployers

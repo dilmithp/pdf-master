@@ -1,0 +1,105 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pdf-master-infrastructure-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: pdf-master
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    - name: pdf-master.infrastructure.database
+      interval: 30s
+      rules:
+        - alert: PDFMasterRDSHighCPUCritical
+          expr: |
+            aws_rds_cpuutilization_average{dbinstance_identifier=~"pdf-master.*"} > 80
+          for: 5m
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "RDS CPU utilization above 80% (critical)"
+            description: "RDS instance {{ $labels.dbinstance_identifier }} CPU is {{ $value | humanize }}% — sustained for 5m."
+            runbook_url: "https://runbooks.pdfmaster.app/rds/high-cpu"
+
+        - alert: PDFMasterRDSLowFreeStorageCritical
+          expr: |
+            aws_rds_free_storage_space_average{dbinstance_identifier=~"pdf-master.*"} / 1073741824 < 15
+          for: 5m
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "RDS free disk space below 15 GB (critical)"
+            description: "RDS instance {{ $labels.dbinstance_identifier }} has only {{ $value | humanize }} GB of free storage remaining."
+            runbook_url: "https://runbooks.pdfmaster.app/rds/low-disk"
+
+        - alert: PDFMasterDBConnectionSaturationCritical
+          expr: |
+            (
+              sum by (service) (hikaricp_connections_active{namespace="pdf-master"})
+              /
+              sum by (service) (hikaricp_connections_max{namespace="pdf-master"})
+            ) > 0.85
+          for: 3m
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "DB connection pool saturation above 85% (critical)"
+            description: "Service {{ $labels.service }} DB connection pool is {{ $value | humanizePercentage }} saturated — connection starvation imminent."
+            runbook_url: "https://runbooks.pdfmaster.app/db/connection-saturation"
+
+    - name: pdf-master.infrastructure.rabbitmq
+      interval: 30s
+      rules:
+        - alert: PDFMasterRabbitMQQueueDepthCritical
+          expr: |
+            rabbitmq_queue_messages{namespace="pdf-master", vhost="pdf-master"} > 1000
+          for: 10m
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "RabbitMQ queue depth above 1000 messages for 10m (critical)"
+            description: "Queue {{ $labels.queue }} on vhost {{ $labels.vhost }} has {{ $value | humanize }} messages — KEDA may not be scaling fast enough."
+            runbook_url: "https://runbooks.pdfmaster.app/rabbitmq/queue-depth"
+
+        - alert: PDFMasterRabbitMQQueueDepthWarning
+          expr: |
+            rabbitmq_queue_messages{namespace="pdf-master", vhost="pdf-master"} > 500
+          for: 5m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "RabbitMQ queue depth approaching 1000 messages"
+            description: "Queue {{ $labels.queue }} has {{ $value | humanize }} messages — monitor for further growth."
+
+    - name: pdf-master.infrastructure.pods
+      interval: 30s
+      rules:
+        - alert: PDFMasterPodRestartLoopCritical
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="pdf-master"}[15m]) > 5
+          for: 5m
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "Pod restart loop detected (critical)"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} container {{ $labels.container }} has restarted {{ $value | humanize }} times in the last 15 minutes."
+            runbook_url: "https://runbooks.pdfmaster.app/pods/restart-loop"
+
+        - alert: PDFMasterPodNotReadyWarning
+          expr: |
+            kube_pod_status_ready{namespace="pdf-master", condition="false"} == 1
+          for: 5m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "Pod not ready"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in a not-ready state for more than 5 minutes."

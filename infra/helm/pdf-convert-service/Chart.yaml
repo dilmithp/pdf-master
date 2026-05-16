@@ -1,0 +1,10 @@
+apiVersion: v2
+name: pdf-convert-service
+description: PDF format conversion worker (Office, images, HTML) for pdfmaster
+type: application
+version: 0.1.0
+appVersion: "latest"
+dependencies:
+  - name: pdfmaster-common
+    version: "0.1.0"
+    repository: "file://../_common"

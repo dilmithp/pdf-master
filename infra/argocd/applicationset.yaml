@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: pdfmaster
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: pdfmaster
+    managed-by: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+
+  generators:
+    - list:
+        elements:
+          - name: gateway
+          - name: auth-service
+          - name: billing-service
+          - name: esign-service
+          - name: notification-service
+          - name: pdf-core-service
+          - name: pdf-ai-service
+          - name: pdf-convert-service
+          - name: pdf-ocr-service
+
+  template:
+    metadata:
+      name: "pdfmaster-{{ .name }}"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: "{{ .name }}"
+        app.kubernetes.io/part-of: pdfmaster
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: pdfmaster
+      source:
+        repoURL: "https://github.com/YOUR_ORG/pdf-master.git"
+        targetRevision: main
+        path: "infra/helm/{{ .name }}"
+        helm:
+          valueFiles:
+            - values.yaml
+            - "../../envs/prod/values-{{ .name }}.yaml"  # optional per-env overrides
+          # Image tag is injected by CI via --set on sync
+          parameters: []
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: pdfmaster
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m
+      ignoreDifferences:
+        # KEDA manages replicas; ignore drift from ArgoCD's perspective
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/replicas

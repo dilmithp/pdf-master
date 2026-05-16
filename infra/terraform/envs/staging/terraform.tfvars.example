@@ -1,0 +1,31 @@
+# Copy to terraform.tfvars and fill in real values. Never commit terraform.tfvars.
+account_id         = "123456789012"
+environment        = "staging"
+cluster_name       = "pdfmaster-staging"
+aws_region         = "us-east-1"
+kubernetes_version = "1.31"
+
+vpc_cidr = "10.1.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
+
+node_instance_type = "t4g.medium"
+node_min_size      = 2
+node_max_size      = 6
+node_desired_size  = 2
+
+rds_instance_class        = "db.t4g.medium"
+rds_allocated_storage     = 20
+rds_max_allocated_storage = 100
+rds_postgres_version      = "16.4"
+
+elasticache_node_type       = "cache.t4g.small"
+elasticache_num_cache_nodes = 1
+
+mq_instance_type    = "mq.t3.micro"
+mq_rabbitmq_version = "3.13"
+
+tags = {
+  Project     = "pdfmaster"
+  Environment = "staging"
+  ManagedBy   = "terraform"
+}

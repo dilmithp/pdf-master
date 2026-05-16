@@ -1,0 +1,198 @@
+# Helm values for opentelemetry-collector chart
+# Chart: open-telemetry/opentelemetry-collector
+# Version: >= 0.90.0
+
+mode: deployment
+
+replicaCount: 2
+
+image:
+  repository: otel/opentelemetry-collector-contrib
+  tag: "0.98.0"
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: "pdf-master-services"
+            scrape_interval: 15s
+            kubernetes_sd_configs:
+              - role: pod
+                namespaces:
+                  names: ["pdf-master"]
+            relabel_configs:
+              - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                action: keep
+                regex: "true"
+              - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                action: replace
+                target_label: __metrics_path__
+                regex: (.+)
+              - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                action: replace
+                regex: ([^:]+)(?::\d+)?;(\d+)
+                replacement: $1:$2
+                target_label: __address__
+          - job_name: "node-exporter"
+            scrape_interval: 30s
+            kubernetes_sd_configs:
+              - role: node
+            relabel_configs:
+              - action: labelmap
+                regex: __meta_kubernetes_node_label_(.+)
+              - target_label: __address__
+                replacement: kubernetes.default.svc:443
+              - source_labels: [__meta_kubernetes_node_name]
+                regex: (.+)
+                target_label: __metrics_path__
+                replacement: /api/v1/nodes/$1/proxy/metrics
+
+  processors:
+    batch:
+      send_batch_size: 8192
+      timeout: 10s
+      send_batch_max_size: 16384
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 25
+    k8sattributes:
+      auth_type: "serviceAccount"
+      passthrough: false
+      extract:
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.deployment.name
+          - k8s.namespace.name
+          - k8s.node.name
+          - k8s.pod.start_time
+        labels:
+          - tag_name: app.label.component
+            key: app.kubernetes.io/component
+            from: pod
+          - tag_name: app.label.version
+            key: app.kubernetes.io/version
+            from: pod
+      pod_association:
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.ip
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.uid
+        - sources:
+            - from: connection
+
+  exporters:
+    prometheusremotewrite:
+      endpoint: "${env:GRAFANA_CLOUD_METRICS_URL}"
+      auth:
+        authenticator: basicauth/grafana
+      resource_to_telemetry_conversion:
+        enabled: true
+      retry_on_failure:
+        enabled: true
+        initial_interval: 5s
+        max_interval: 30s
+        max_elapsed_time: 300s
+    loki:
+      endpoint: "${env:GRAFANA_CLOUD_LOGS_URL}"
+      auth:
+        authenticator: basicauth/grafana
+      default_labels_enabled:
+        exporter: false
+        job: true
+        instance: true
+        level: true
+    otlp/tempo:
+      endpoint: "${env:GRAFANA_CLOUD_TRACES_URL}"
+      auth:
+        authenticator: basicauth/grafana
+      tls:
+        insecure: false
+
+  extensions:
+    basicauth/grafana:
+      client_auth:
+        username: "${env:GRAFANA_CLOUD_INSTANCE_ID}"
+        password: "${env:GRAFANA_CLOUD_API_KEY}"
+    health_check: {}
+    zpages:
+      endpoint: "0.0.0.0:55679"
+
+  service:
+    extensions: [basicauth/grafana, health_check, zpages]
+    pipelines:
+      metrics:
+        receivers: [otlp, prometheus]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [prometheusremotewrite]
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [otlp/tempo]
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [loki]
+
+service:
+  type: ClusterIP
+  ports:
+    otlp-grpc:
+      enabled: true
+      containerPort: 4317
+      servicePort: 4317
+      protocol: TCP
+    otlp-http:
+      enabled: true
+      containerPort: 4318
+      servicePort: 4318
+      protocol: TCP
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8888"
+  prometheus.io/path: "/metrics"
+
+serviceAccount:
+  create: true
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: [pods, nodes, namespaces, endpoints, services]
+      verbs: [get, watch, list]
+    - apiGroups: [apps]
+      resources: [replicasets, deployments, daemonsets, statefulsets]
+      verbs: [get, watch, list]
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [opentelemetry-collector]
+          topologyKey: kubernetes.io/hostname

@@ -1,0 +1,117 @@
+name: Infra Validate
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/**"
+
+permissions:
+  contents: read
+
+jobs:
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.16.3"
+
+      - name: Build _common chart dependencies
+        run: |
+          cd infra/helm/_common
+          helm dependency update || true
+
+      - name: Lint all service charts
+        run: |
+          SERVICES=(
+            gateway
+            auth-service
+            billing-service
+            esign-service
+            notification-service
+            pdf-core-service
+            pdf-ai-service
+            pdf-convert-service
+            pdf-ocr-service
+          )
+          FAILED=()
+          for svc in "${SERVICES[@]}"; do
+            echo "--- Linting $svc ---"
+            if ! helm lint "infra/helm/$svc" --strict 2>&1; then
+              FAILED+=("$svc")
+            fi
+          done
+          if [ ${#FAILED[@]} -gt 0 ]; then
+            echo "Helm lint failed for: ${FAILED[*]}"
+            exit 1
+          fi
+
+  terraform-validate:
+    name: Terraform Validate (prod)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive infra/terraform
+
+      - name: Terraform Init (offline, no backend)
+        run: |
+          cd infra/terraform/envs/prod
+          terraform init -backend=false
+
+      - name: Terraform Validate
+        run: |
+          cd infra/terraform/envs/prod
+          terraform validate
+
+  yaml-lint:
+    name: YAML Lint (Kubernetes manifests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint Kubernetes manifests
+        run: |
+          yamllint -d "{extends: default, rules: {line-length: {max: 140}, truthy: disable}}" \
+            infra/kubernetes/ \
+            infra/argocd/
+
+  argocd-validate:
+    name: ArgoCD Manifest Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check ArgoCD YAML is parseable
+        run: |
+          python3 -c "
+          import yaml, sys, glob
+          files = glob.glob('infra/argocd/**/*.yaml', recursive=True)
+          errors = []
+          for f in files:
+              try:
+                  list(yaml.safe_load_all(open(f)))
+                  print(f'OK: {f}')
+              except yaml.YAMLError as e:
+                  errors.append(f'{f}: {e}')
+                  print(f'FAIL: {f}: {e}', file=sys.stderr)
+          sys.exit(len(errors))
+          "

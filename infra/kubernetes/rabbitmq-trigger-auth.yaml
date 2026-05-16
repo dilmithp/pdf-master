@@ -1,0 +1,37 @@
+# TriggerAuthentication for KEDA — reads the RabbitMQ connection string
+# from the Kubernetes Secret synced by External Secrets Operator.
+#
+# Prerequisites:
+#   1. ESO has synced pdfmaster/prod/rabbitmq/connection into Secret "rabbitmq-connection"
+#   2. KEDA is installed in the keda namespace
+#
+# The Secret "rabbitmq-connection" must contain key "url" with value:
+#   amqps://user:password@b-xxxx.mq.us-east-1.amazonaws.com:5671
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-connection
+  namespace: pdfmaster
+  labels:
+    app.kubernetes.io/part-of: pdfmaster
+    managed-by: external-secrets
+  annotations:
+    # This Secret is managed by ESO; do not edit manually.
+    # The ExternalSecret resource that populates this lives in each service chart.
+    external-secrets.io/managed: "true"
+type: Opaque
+# data: populated by ExternalSecret; do not add values here
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: rabbitmq-trigger-auth
+  namespace: pdfmaster
+  labels:
+    app.kubernetes.io/part-of: pdfmaster
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: rabbitmq-connection
+      key: url

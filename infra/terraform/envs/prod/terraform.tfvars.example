@@ -1,0 +1,43 @@
+# Copy to terraform.tfvars and fill in real values. Never commit terraform.tfvars.
+account_id         = "123456789012"
+environment        = "prod"
+cluster_name       = "pdfmaster-prod"
+aws_region         = "us-east-1"
+kubernetes_version = "1.31"
+
+vpc_cidr = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
+
+node_instance_type = "m6g.large"
+node_min_size      = 3
+node_max_size      = 20
+node_desired_size  = 3
+
+rds_instance_class        = "db.r6g.large"
+rds_allocated_storage     = 100
+rds_max_allocated_storage = 1000
+rds_postgres_version      = "16.4"
+
+elasticache_node_type       = "cache.t4g.medium"
+elasticache_num_cache_nodes = 2
+
+mq_instance_type    = "mq.m5.large"
+mq_rabbitmq_version = "3.13"
+
+services = [
+  "gateway",
+  "auth-service",
+  "billing-service",
+  "esign-service",
+  "notification-service",
+  "pdf-core-service",
+  "pdf-ai-service",
+  "pdf-convert-service",
+  "pdf-ocr-service",
+]
+
+tags = {
+  Project     = "pdfmaster"
+  Environment = "prod"
+  ManagedBy   = "terraform"
+}

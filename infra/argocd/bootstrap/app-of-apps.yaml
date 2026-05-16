@@ -1,0 +1,31 @@
+# App-of-Apps root — after ArgoCD is installed, apply this to bootstrap all platform components
+# and the pdfmaster ApplicationSet.
+# kubectl apply -f infra/argocd/bootstrap/app-of-apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pdfmaster-platform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: pdfmaster-bootstrap
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/YOUR_ORG/pdf-master.git"
+    targetRevision: main
+    path: infra/argocd
+    directory:
+      recurse: false
+      include: "*.yaml"
+      exclude: "bootstrap/*.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

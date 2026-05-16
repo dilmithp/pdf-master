@@ -1,0 +1,5 @@
+apiVersion: v2
+name: pdfmaster-common
+description: Shared template library for all pdfmaster service charts
+type: library
+version: 0.1.0

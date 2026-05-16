@@ -1,0 +1,74 @@
+image:
+  repository: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/pdfmaster/pdf-ai-service
+  tag: "latest"
+
+replicaCount: 1
+
+port: 8080
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "2Gi"
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+
+hpa:
+  enabled: false  # KEDA replaces HPA
+
+keda:
+  enabled: true
+  queueName: "pdf-ai-jobs"
+  minReplicas: 0
+  maxReplicas: 10
+  targetMessageCount: 3
+
+serviceAccount:
+  create: true
+  annotations: {}
+  # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/pdfmaster-pdf-ai-service
+
+secrets:
+  - name: anthropic
+    remoteRef: pdfmaster/prod/ai/anthropic-api-key
+  - name: openai
+    remoteRef: pdfmaster/prod/ai/openai-api-key
+  - name: rabbitmq
+    remoteRef: pdfmaster/prod/rabbitmq/connection
+  - name: postgres
+    remoteRef: pdfmaster/prod/postgres/master-password
+
+config:
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://RDS_HOST_PLACEHOLDER:5432/pdfai"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+  SPRING_FLYWAY_ENABLED: "true"
+  AWS_S3_BUCKET: "pdfmaster-prod-documents"
+  AWS_REGION: "us-east-1"
+  # pgvector connection for embeddings
+  PGVECTOR_HOST: "RDS_HOST_PLACEHOLDER"
+  PGVECTOR_PORT: "5432"
+  PGVECTOR_DATABASE: "pdfai"
+  PDF_AI_EMBEDDING_MODEL: "text-embedding-3-small"
+  PDF_AI_COMPLETION_MODEL: "claude-3-5-sonnet-20241022"
+
+networkPolicy:
+  enabled: true
+  egress:
+    allowDNS: true
+    allowS3: true
+    allowRDS: true
+    allowRedis: false
+    allowRabbitMQ: true
+    allowGateway: false
+    # Anthropic and OpenAI API outbound
+    extraCidrs:
+      - cidr: 0.0.0.0/0
+        port: 443
+        protocol: TCP
+
+service:
+  type: ClusterIP
+
+podDisruptionBudget:
+  enabled: true

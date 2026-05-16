@@ -1,0 +1,63 @@
+image:
+  repository: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/pdfmaster/notification-service
+  tag: "latest"
+
+replicaCount: 2
+
+port: 8080
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "384Mi"
+  limits:
+    cpu: "500m"
+    memory: "768Mi"
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+keda:
+  enabled: false
+
+serviceAccount:
+  create: true
+  annotations: {}
+  # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/pdfmaster-notification-service
+
+secrets:
+  - name: postmark
+    remoteRef: pdfmaster/prod/notification/postmark-token
+  - name: rabbitmq
+    remoteRef: pdfmaster/prod/rabbitmq/connection
+
+config:
+  SPRING_RABBITMQ_LISTENER_SIMPLE_DEFAULT_REQUEUE_REJECTED: "false"
+
+networkPolicy:
+  enabled: true
+  egress:
+    allowDNS: true
+    allowS3: false
+    allowRDS: false
+    allowRedis: false
+    allowRabbitMQ: true
+    allowGateway: false
+    # Postmark SMTP/API outbound
+    extraCidrs:
+      - cidr: 0.0.0.0/0
+        port: 443
+        protocol: TCP
+      - cidr: 0.0.0.0/0
+        port: 587
+        protocol: TCP
+
+service:
+  type: ClusterIP
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

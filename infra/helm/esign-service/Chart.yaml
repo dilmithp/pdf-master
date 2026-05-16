@@ -1,0 +1,10 @@
+apiVersion: v2
+name: esign-service
+description: Electronic signature service for pdfmaster
+type: application
+version: 0.1.0
+appVersion: "latest"
+dependencies:
+  - name: pdfmaster-common
+    version: "0.1.0"
+    repository: "file://../_common"

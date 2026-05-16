@@ -1,0 +1,45 @@
+# Default-deny baseline for the pdfmaster namespace.
+# Per-service policies live in each service's Helm chart and layer on top of this.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: pdfmaster
+  labels:
+    app.kubernetes.io/part-of: pdfmaster
+    managed-by: kubectl
+spec:
+  podSelector: {}  # matches ALL pods in the namespace
+  policyTypes:
+    - Ingress
+    - Egress
+  # No ingress or egress rules — everything blocked by default.
+  # Each Helm chart's NetworkPolicy adds specific allow rules.
+---
+# Allow pods within the namespace to reach the Kubernetes API server
+# (needed for health checks and service discovery via DNS).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kube-dns-egress
+  namespace: pdfmaster
+  labels:
+    app.kubernetes.io/part-of: pdfmaster
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

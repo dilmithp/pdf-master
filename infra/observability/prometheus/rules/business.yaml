@@ -1,0 +1,83 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pdf-master-business-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: pdf-master
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+    - name: pdf-master.business.stripe
+      interval: 1m
+      rules:
+        - alert: PDFMasterStripeWebhookFailureRateCritical
+          expr: |
+            increase(stripe_webhook_delivery_failures_total{namespace="pdf-master"}[1h]) > 5
+          for: 5m
+          labels:
+            severity: critical
+            team: billing
+          annotations:
+            summary: "Stripe webhook delivery failures exceed 5 in the last hour (critical)"
+            description: "{{ $value | humanize }} Stripe webhook delivery failures in the last hour — billing events may be lost, causing subscription state drift."
+            runbook_url: "https://runbooks.pdfmaster.app/billing/stripe-webhook-failures"
+
+        - alert: PDFMasterStripeWebhookIdempotencyReplayElevated
+          expr: |
+            increase(stripe_webhook_idempotency_replays_total{namespace="pdf-master"}[1h]) > 20
+          for: 5m
+          labels:
+            severity: warning
+            team: billing
+          annotations:
+            summary: "Elevated Stripe webhook idempotency replay rate"
+            description: "{{ $value | humanize }} idempotent Stripe webhook replays in the last hour — may indicate upstream retry storm."
+
+    - name: pdf-master.business.free-tier
+      interval: 5m
+      rules:
+        - alert: PDFMasterFreeTierDailyQuotaApproaching
+          expr: |
+            (
+              pdf_master_free_tier_operations_today_total
+              /
+              pdf_master_free_tier_daily_quota_limit
+            ) > 0.85
+          for: 5m
+          labels:
+            severity: warning
+            team: product
+          annotations:
+            summary: "Free-tier daily operation quota is 85% consumed"
+            description: "Free-tier usage is at {{ $value | humanizePercentage }} of daily quota — conversion prompt may fire soon for many users."
+
+        - alert: PDFMasterFreeTierDailyQuotaExhausted
+          expr: |
+            (
+              pdf_master_free_tier_operations_today_total
+              /
+              pdf_master_free_tier_daily_quota_limit
+            ) >= 1.0
+          for: 1m
+          labels:
+            severity: warning
+            team: product
+          annotations:
+            summary: "Free-tier daily operation quota exhausted"
+            description: "Free-tier daily quota has been fully consumed — all additional free-tier requests will be rate-limited until midnight UTC."
+
+    - name: pdf-master.business.subscriptions
+      interval: 5m
+      rules:
+        - alert: PDFMasterSubscriptionChurnSpikeWarning
+          expr: |
+            increase(stripe_subscription_canceled_total{namespace="pdf-master"}[24h]) > 50
+          for: 10m
+          labels:
+            severity: warning
+            team: growth
+          annotations:
+            summary: "Subscription churn spike detected"
+            description: "{{ $value | humanize }} subscription cancellations in the last 24 hours — exceeds normal daily churn threshold."

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pdfmaster
+  labels:
+    kubernetes.io/metadata.name: pdfmaster
+    app.kubernetes.io/part-of: pdfmaster
+    # Label used by NetworkPolicy selectors
+    pdfmaster.io/namespace: "true"

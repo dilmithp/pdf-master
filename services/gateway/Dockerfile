@@ -1,46 +1,33 @@
 # syntax=docker/dockerfile:1.7
-
-# ---------- Stage 1: build ----------
-FROM eclipse-temurin:17-jdk-alpine AS build
+# Builder stage — uses the repo's gradle wrapper to build the bootJar
+FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /workspace
+# Copy gradle wrapper + build files first for layer caching
+COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties* ./
+COPY gradle ./gradle
+COPY build-logic ./build-logic
+# Copy only this service
+COPY services/gateway ./services/gateway
+RUN chmod +x ./gradlew && ./gradlew --no-daemon :services:gateway:bootJar -x test
 
-# Copy gradle wrapper and project metadata first to maximise layer caching.
-COPY gradlew gradlew
-COPY gradle gradle
-COPY settings.gradle.kts build.gradle.kts gradle.properties ./
-COPY build-logic build-logic
-
-# Copy only the gateway source so unrelated services do not bust the build cache.
-COPY services/gateway services/gateway
-
-RUN chmod +x ./gradlew \
- && ./gradlew --no-daemon :services:gateway:bootJar
-
-# Extract layered jar for better runtime caching.
-WORKDIR /workspace/extracted
-RUN cp /workspace/services/gateway/build/libs/*.jar app.jar \
- && java -Djarmode=layertools -jar app.jar extract
-
-# ---------- Stage 2: runtime ----------
+# Runtime stage
 FROM eclipse-temurin:17-jre-alpine
+LABEL org.opencontainers.image.title="pdfmaster/gateway"
+LABEL org.opencontainers.image.description="API gateway (Spring Cloud Gateway / WebFlux) — entry point for all client traffic."
+LABEL org.opencontainers.image.source="https://github.com/dilmithp/pdf-master"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
 
-RUN apk add --no-cache curl tini \
- && addgroup -S app \
- && adduser -S -G app -h /home/app app
+RUN apk add --no-cache wget
 
-USER app
-WORKDIR /home/app
-
-COPY --from=build --chown=app:app /workspace/extracted/dependencies/ ./
-COPY --from=build --chown=app:app /workspace/extracted/spring-boot-loader/ ./
-COPY --from=build --chown=app:app /workspace/extracted/snapshot-dependencies/ ./
-COPY --from=build --chown=app:app /workspace/extracted/application/ ./
+# Non-root user
+RUN addgroup -S -g 10001 pdfmaster && adduser -S -u 10001 -G pdfmaster pdfmaster
+WORKDIR /app
+COPY --from=builder /workspace/services/gateway/build/libs/*.jar /app/app.jar
+RUN chown -R pdfmaster:pdfmaster /app
+USER pdfmaster
 
 EXPOSE 8080
-
-ENV JAVA_OPTS=""
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD curl -fsS http://localhost:8080/actuator/health/liveness || exit 1
-
-ENTRYPOINT ["/sbin/tini", "--", "sh", "-c", "exec java $JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

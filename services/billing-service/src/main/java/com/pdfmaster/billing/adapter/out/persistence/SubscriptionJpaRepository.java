@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SubscriptionJpaRepository extends JpaRepository<SubscriptionEntity, UUID> {
 
   Optional<SubscriptionEntity> findByUserId(UUID userId);
+
+  long deleteByUserId(UUID userId);
 }

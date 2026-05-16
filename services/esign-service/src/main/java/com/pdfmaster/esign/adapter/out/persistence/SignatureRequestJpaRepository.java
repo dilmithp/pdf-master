@@ -5,4 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Spring Data repository for {@link SignatureRequestEntity}. */
 public interface SignatureRequestJpaRepository
-    extends JpaRepository<SignatureRequestEntity, UUID> {}
+    extends JpaRepository<SignatureRequestEntity, UUID> {
+
+  long deleteBySenderId(UUID senderId);
+}

@@ -50,6 +50,8 @@ public class SecurityConfig {
                         "/.well-known/**",
                         "/v1/users")
                     .permitAll()
+                    .requestMatchers("/v1/account/**")
+                    .authenticated()
                     .anyRequest()
                     .authenticated())
         .oauth2ResourceServer(o -> o.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));

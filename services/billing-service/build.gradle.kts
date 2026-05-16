@@ -10,4 +10,6 @@ description = "Subscription billing, Stripe integration, and webhook ingestion."
 
 dependencies {
     implementation("com.stripe:stripe-java:${libs.versions.stripeJava.get()}")
+    implementation("org.springframework.boot:spring-boot-starter-amqp")
+    testImplementation("org.springframework.amqp:spring-rabbit-test")
 }

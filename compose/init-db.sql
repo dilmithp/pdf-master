@@ -1,0 +1,8 @@
+-- Create per-service schemas in the shared dev cluster
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE SCHEMA IF NOT EXISTS billing;
+CREATE SCHEMA IF NOT EXISTS esign;
+CREATE SCHEMA IF NOT EXISTS notification;
+CREATE SCHEMA IF NOT EXISTS pdf_core;
+CREATE SCHEMA IF NOT EXISTS pdf_convert;
+CREATE SCHEMA IF NOT EXISTS pdf_ocr;

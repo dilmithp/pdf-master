@@ -1,0 +1,11 @@
+import * as Sentry from '@sentry/nextjs';
+
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+
+Sentry.init({
+  ...(dsn !== undefined ? { dsn } : {}),
+  enabled: !!dsn,
+
+  // Lower sample rate on edge to minimise latency impact
+  tracesSampleRate: 0.05,
+});

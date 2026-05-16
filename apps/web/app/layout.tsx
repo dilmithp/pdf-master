@@ -1,6 +1,9 @@
 import { BRAND } from '@/lib/brand';
+import { ClerkProvider } from '@clerk/nextjs';
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+
+const hasClerkKeys = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
 export const metadata: Metadata = {
   metadataBase: new URL(BRAND.baseUrl),
@@ -52,17 +55,33 @@ const organizationJsonLd = {
   },
 };
 
+function BodyContent({ children }: { children: React.ReactNode }) {
+  return (
+    <body className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
+      <script
+        type="application/ld+json"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD is a primitive serialized via JSON.stringify, no injection vector
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      {children}
+    </body>
+  );
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  if (hasClerkKeys) {
+    return (
+      <ClerkProvider>
+        <html lang="en">
+          <BodyContent>{children}</BodyContent>
+        </html>
+      </ClerkProvider>
+    );
+  }
+
   return (
     <html lang="en">
-      <body className="min-h-screen bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
-        <script
-          type="application/ld+json"
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD is a primitive serialized via JSON.stringify, no injection vector
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-        />
-        {children}
-      </body>
+      <BodyContent>{children}</BodyContent>
     </html>
   );
 }

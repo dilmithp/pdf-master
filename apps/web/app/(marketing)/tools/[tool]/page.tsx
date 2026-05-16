@@ -3,8 +3,8 @@ import { FaqList } from '@/components/marketing/faq-list';
 import { HowToList } from '@/components/marketing/how-to-list';
 import { JsonLd } from '@/components/marketing/json-ld';
 import { RelatedTools } from '@/components/marketing/related-tools';
-import { ToolDropzone } from '@/components/marketing/tool-dropzone';
 import { TrustStrip } from '@/components/marketing/trust-strip';
+import { ToolFlow } from '@/components/tool/ToolFlow';
 import { BRAND } from '@/lib/brand';
 import { buildToolPageGraph } from '@/lib/seo/schema';
 import type { Breadcrumb } from '@/lib/seo/types';
@@ -82,7 +82,13 @@ export default async function ToolPage({ params }: ToolPageProps) {
       </header>
 
       <div className="mt-10">
-        <ToolDropzone tool={tool} />
+        <ToolFlow
+          op={tool.op}
+          acceptMimes={[...tool.acceptMimes]}
+          minFiles={tool.minFiles}
+          maxFiles={tool.maxFiles}
+          maxBytes={tool.maxBytes}
+        />
       </div>
 
       <section className="prose prose-neutral mt-12 max-w-none dark:prose-invert">

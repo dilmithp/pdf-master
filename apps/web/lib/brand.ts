@@ -4,6 +4,14 @@ export const BRAND = {
   domain: 'pdfmaster.app',
   baseUrl: process.env.NEXT_PUBLIC_BASE_URL ?? 'https://pdfmaster.app',
   supportEmail: 'support@pdfmaster.app',
+  /** Data Protection Officer contact email */
+  dpoEmail: 'privacy@pdfmaster.app',
+  /** Security vulnerability disclosure email */
+  securityEmail: 'security@pdfmaster.app',
+  /** Registered legal entity name */
+  companyEntity: 'PDFMaster, Inc.',
+  /** Registered company address — replace with actual legal address before launch */
+  legalAddress: '123 Placeholder Street, Wilmington, DE 19801, United States',
   social: {
     twitter: '@pdfmaster',
     github: 'https://github.com/pdfmaster',

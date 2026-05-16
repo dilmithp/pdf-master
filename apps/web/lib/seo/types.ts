@@ -22,6 +22,16 @@ export interface SeoTool {
   localizedSlugs: Partial<Record<Locale, string>>;
   publishedAt: string;
   updatedAt: string;
+  /** Gateway operation identifier sent to POST /v1/jobs/<op> */
+  op: string;
+  /** MIME types accepted by the dropzone */
+  acceptMimes: string[];
+  /** Minimum number of files required */
+  minFiles: number;
+  /** Maximum number of files allowed */
+  maxFiles: number;
+  /** Maximum bytes per file */
+  maxBytes: number;
 }
 
 export type ToolCategory =

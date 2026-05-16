@@ -13,7 +13,10 @@ export function GET(): Response {
     `- [All tools](${BRAND.baseUrl}/tools): index of every PDF tool.`,
     `- [Pricing](${BRAND.baseUrl}/pricing): free, Pro, Team, Business, and API pricing.`,
     `- [Developer API](${BRAND.baseUrl}/api): REST and GraphQL API documentation.`,
-    `- [Security](${BRAND.baseUrl}/security): security and privacy practices.`,
+    `- [Security](${BRAND.baseUrl}/legal/security): security and privacy practices.`,
+    `- [Privacy Policy](${BRAND.baseUrl}/legal/privacy): GDPR and CCPA privacy policy.`,
+    `- [Terms of Service](${BRAND.baseUrl}/legal/terms): terms governing use of the platform.`,
+    `- [Subprocessors](${BRAND.baseUrl}/legal/subprocessors): list of third-party data processors.`,
     '',
     '## PDF tools',
     ...TOOL_SEED.map(

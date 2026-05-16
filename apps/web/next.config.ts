@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
@@ -24,4 +25,27 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+const sentryOrg = process.env.SENTRY_ORG;
+const sentryProject = process.env.SENTRY_PROJECT;
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+
+export default withSentryConfig(config, {
+  // Only upload source maps when SENTRY_AUTH_TOKEN is present (CI/CD only)
+  silent: !sentryAuthToken,
+  ...(sentryOrg !== undefined ? { org: sentryOrg } : {}),
+  ...(sentryProject !== undefined ? { project: sentryProject } : {}),
+  ...(sentryAuthToken !== undefined ? { authToken: sentryAuthToken } : {}),
+
+  // Disable automatic instrumentation of server-side pages
+  // We manage Sentry init explicitly via instrumentation.ts
+  autoInstrumentServerFunctions: false,
+
+  // Tunnel Sentry requests through own domain to avoid ad-blockers
+  tunnelRoute: '/monitoring-tunnel',
+
+  // Tree-shake Sentry debug code in production
+  disableLogger: true,
+
+  // Do not hide source maps from the browser (they are already on CDN)
+  hideSourceMaps: false,
+});

@@ -1,5 +1,6 @@
 package com.pdfmaster.billing.adapter.in;
 
+import com.pdfmaster.billing.application.StripeEventLedger;
 import com.pdfmaster.billing.config.StripeProperties;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Receives Stripe webhook callbacks and verifies their HMAC signature. */
+/** Receives Stripe webhook callbacks, verifies HMAC, and deduplicates via the event ledger. */
 @RestController
 @RequestMapping("/v1/webhooks/stripe")
 public class StripeWebhookController {
@@ -21,9 +22,11 @@ public class StripeWebhookController {
   private static final Logger log = LoggerFactory.getLogger(StripeWebhookController.class);
 
   private final StripeProperties properties;
+  private final StripeEventLedger ledger;
 
-  public StripeWebhookController(StripeProperties properties) {
+  public StripeWebhookController(StripeProperties properties, StripeEventLedger ledger) {
     this.properties = properties;
+    this.ledger = ledger;
   }
 
   @PostMapping
@@ -36,7 +39,14 @@ public class StripeWebhookController {
       log.warn("Rejected Stripe webhook: invalid signature");
       return ResponseEntity.badRequest().build();
     }
-    log.info("Received Stripe webhook event type={} id={}", event.getType(), event.getId());
+    boolean fresh = ledger.recordIfNew(event, payload);
+    if (!fresh) {
+      log.info(
+          "Idempotent replay of Stripe event id={} type={}", event.getId(), event.getType());
+      return ResponseEntity.ok().build();
+    }
+    log.info("Processing Stripe webhook event type={} id={}", event.getType(), event.getId());
+    // Dispatch to domain handlers once implemented (customer.subscription.* etc.).
     return ResponseEntity.ok().build();
   }
 }

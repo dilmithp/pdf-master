@@ -1,6 +1,7 @@
 package com.pdfmaster.pdfconvert.config;
 
 import com.pdfmaster.pdfconvert.adapter.out.queue.RabbitMqJobPublisher;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -9,6 +10,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,7 +47,11 @@ public class RabbitMqConfig {
 
   @Bean
   Jackson2JsonMessageConverter jsonMessageConverter() {
-    return new Jackson2JsonMessageConverter();
+    Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+    DefaultClassMapper mapper = new DefaultClassMapper();
+    mapper.setTrustedPackages("com.pdfmaster.*", "java.util", "java.lang");
+    converter.setClassMapper(mapper);
+    return converter;
   }
 
   @Bean
@@ -58,6 +64,12 @@ public class RabbitMqConfig {
     RabbitTemplate template = new RabbitTemplate(connectionFactory);
     template.setMessageConverter(converter);
     template.setMandatory(true);
+    template.setConfirmCallback(
+        (correlationData, ack, cause) -> {
+          if (!ack) {
+            LoggerFactory.getLogger(RabbitMqConfig.class).warn("Publish nack: {}", cause);
+          }
+        });
     return template;
   }
 }

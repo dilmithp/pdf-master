@@ -8,6 +8,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.DefaultClassMapper;
+import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -39,10 +40,13 @@ public class RabbitMqConfig {
 
   @Bean
   public MessageConverter jsonMessageConverter() {
+    // Use Jackson type mapper (NOT DefaultClassMapper). Type mapper supports the `.*` wildcard
+    // for subpackages; ClassMapper requires exact package matches and is legacy. Setting both
+    // makes the converter prefer ClassMapper which breaks deserialization of nested packages.
     Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
-    DefaultClassMapper mapper = new DefaultClassMapper();
-    mapper.setTrustedPackages("com.pdfmaster.*", "java.util", "java.lang");
-    converter.setClassMapper(mapper);
+    DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
+    typeMapper.setTrustedPackages("com.pdfmaster.*", "java.util", "java.lang");
+    converter.setJavaTypeMapper(typeMapper);
     return converter;
   }
 

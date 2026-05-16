@@ -10,7 +10,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.DefaultClassMapper;
+import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,9 +52,9 @@ public class RabbitMqConfig {
   @Bean
   Jackson2JsonMessageConverter jsonMessageConverter() {
     Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
-    DefaultClassMapper mapper = new DefaultClassMapper();
-    mapper.setTrustedPackages("com.pdfmaster.*", "java.util", "java.lang");
-    converter.setClassMapper(mapper);
+    DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
+    typeMapper.setTrustedPackages("com.pdfmaster.*", "java.util", "java.lang");
+    converter.setJavaTypeMapper(typeMapper);
     return converter;
   }
 

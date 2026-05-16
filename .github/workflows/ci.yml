@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Gradle)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-enabled: true
+
+      - name: Spotless check
+        run: ./gradlew spotlessCheck --stacktrace
+
+      - name: License audit
+        run: ./gradlew checkLicense --stacktrace
+
+      - name: Build (no tests)
+        run: ./gradlew build -x test --stacktrace
+
+      - name: ArchUnit + unit tests
+        run: ./gradlew test --stacktrace
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: services/*/build/reports/tests/test/**
+          retention-days: 7
+
+  frontend:
+    name: Frontend (pnpm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm --filter @pdf-master/web typecheck
+
+      - name: Lint
+        run: pnpm exec biome check . --reporter=github
+
+      - name: Test
+        run: pnpm --filter @pdf-master/web test
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: apps/web/coverage/**
+          retention-days: 7
+          if-no-files-found: ignore

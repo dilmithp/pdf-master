@@ -1,0 +1,113 @@
+version: 2
+
+updates:
+  # Gradle dependencies (root build)
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: daily
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    reviewers: []
+
+  # npm — apps/web workspace
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule:
+      interval: daily
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    reviewers: []
+
+  # npm — root workspace (package.json with biome + typescript devDeps)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    reviewers: []
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    reviewers: []
+
+  # Docker — gateway
+  - package-ecosystem: docker
+    directory: /services/gateway
+    schedule:
+      interval: daily
+    reviewers: []
+
+  # Docker — auth-service
+  - package-ecosystem: docker
+    directory: /services/auth-service
+    schedule:
+      interval: daily
+    reviewers: []
+
+  # Docker — billing-service
+  - package-ecosystem: docker
+    directory: /services/billing-service
+    schedule:
+      interval: daily
+    reviewers: []
+
+  # Docker — esign-service
+  - package-ecosystem: docker
+    directory: /services/esign-service
+    schedule:
+      interval: daily
+    reviewers: []
+
+  # Docker — notification-service
+  - package-ecosystem: docker
+    directory: /services/notification-service
+    schedule:
+      interval: daily
+    reviewers: []
+
+  # Docker — pdf-core-service
+  - package-ecosystem: docker
+    directory: /services/pdf-core-service
+    schedule:
+      interval: daily
+    reviewers: []
+
+  # Docker — pdf-convert-service
+  - package-ecosystem: docker
+    directory: /services/pdf-convert-service
+    schedule:
+      interval: daily
+    reviewers: []
+
+  # Docker — pdf-ocr-service
+  - package-ecosystem: docker
+    directory: /services/pdf-ocr-service
+    schedule:
+      interval: daily
+    reviewers: []
+
+  # Docker — pdf-ai-service
+  - package-ecosystem: docker
+    directory: /services/pdf-ai-service
+    schedule:
+      interval: daily
+    reviewers: []

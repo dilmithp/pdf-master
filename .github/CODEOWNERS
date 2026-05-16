@@ -1,0 +1,8 @@
+# Owners are auto-requested for review on PRs touching these paths.
+# Replace placeholders with real GitHub handles once team is set up.
+* @dilmithp
+/services/auth-service/ @dilmithp
+/services/billing-service/ @dilmithp
+/apps/web/ @dilmithp
+/.github/ @dilmithp
+/infra/ @dilmithp
